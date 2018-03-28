@@ -16,6 +16,10 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="Maven: be.isabel:hsm-api:2.2.1-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="Maven: javax.inject:com.springsource.javax.inject:1.0.0" level="project" />
+    <orderEntry type="library" name="Maven: javax.annotation:com.springsource.javax.annotation:1.0.0" level="project" />
+    <orderEntry type="library" name="Maven: com.safenet-inc:luna-provider:5.5.0" level="project" />
     <orderEntry type="library" name="Maven: org.slf4j:slf4j-simple:1.7.25" level="project" />
     <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.25" level="project" />
     <orderEntry type="library" name="Maven: com.nimbusds:nimbus-jose-jwt:5.7" level="project" />
