@@ -9,6 +9,8 @@ import java.security.*;
 import java.security.cert.Certificate;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Enumeration;
+import java.util.Scanner;
 
 import static java.lang.String.format;
 
@@ -23,14 +25,30 @@ public class HsmTest {
             System.out.println(format("Service Type : %s  ---  Algorithm: %s", service.getType(), service.getAlgorithm()));
         }
 
+        System.out.println("provider infos : \n" + provider.getInfo());
+        for (Object key : provider.keySet()) {
+            System.out.println("key: " + key+ " -> value: "+provider.get(key));
+        }
         KeyStore keystore = KeyStore.getInstance("PKCS11", provider);
         String alias = "ditsmeamenc";
-        char[] pin = "3C/N-7xWq-bLEF-GEq7".toCharArray();
+        Scanner sc=new Scanner(System.in);
+        System.out.print("ENTER THE ALIAS ??? ");
+        alias=sc.nextLine();
+        //char[] pin = "3C/N-7xWq-bLEF-GEq7".toCharArray();
+        char[] pin = "Mb7q-X/AK-GLGA-b9sW".toCharArray();
         keystore.load(null, pin);
-
+        System.out.println("keystore : " + keystore.getType());
+        Enumeration<String> aliases = keystore.aliases();
+        while (aliases.hasMoreElements()) {
+            System.out.println("alias -> " + aliases.nextElement());
+        }
         Key key = keystore.getKey(alias, pin);
-        System.out.println("key format : "+key.getFormat());
-        System.out.println("key class : "+key.getClass());
+        if (key == null) {
+            System.out.println("cannot acces the key !");
+            System.exit(1);
+        }
+        System.out.println("key format : " + key.getFormat());
+        System.out.println("key class : " + key.getClass());
         if (key instanceof PrivateKey) {
             RSAPrivateKey pKey = (RSAPrivateKey) key;
             String pKeyStr = Base64.encodeBase64String(pKey.getEncoded());

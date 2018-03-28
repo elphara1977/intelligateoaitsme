@@ -16,7 +16,8 @@ import static java.lang.String.format;
 public class HsmTest2 {
 
     public static void main(String[] args) throws Exception {
-        String configName = "/usr/safenet/luna.cfg";
+        //String configName = "/usr/safenet/luna.cfg";
+        String configName = "./opt/forgerock/software/softhsm/softhsm.conf";
 
 //        Provider provider = new SunPKCS11(configName);
 
