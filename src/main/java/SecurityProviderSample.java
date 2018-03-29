@@ -1,28 +1,35 @@
-import java.security.KeyStore;
-import java.security.NoSuchAlgorithmException;
-import java.security.Provider;
-import java.security.ProviderException;
-import java.security.SecureRandom;
-import java.security.Security;
-import java.util.Arrays;
+import java.security.*;
+import java.security.spec.MGF1ParameterSpec;
+import java.util.*;
 
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
-import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.OAEPParameterSpec;
+import javax.crypto.spec.PSource;
 
+import com.nimbusds.jose.crypto.RSADecrypter;
+import com.nimbusds.jose.util.Base64URL;
+import com.nimbusds.jwt.EncryptedJWT;
+import com.nimbusds.jwt.SignedJWT;
 import com.safenetinc.luna.LunaSlotManager;
 import com.safenetinc.luna.provider.LunaProvider;
+import com.safenetinc.luna.provider.key.LunaKey;
+import com.safenetinc.luna.provider.key.LunaPrivateKeyRsa;
 
 public class SecurityProviderSample {
 
-    public static final String TRANSFORMATION_NAME_AES = "AES/CBC/PKCS5Padding";
-    public static final byte[] INITIALIZATION_VECTOR_AES =
-            {(byte) 90, (byte) 90, (byte) 90, (byte) 90, (byte) 90, (byte) 90, (byte) 90, (byte) 90, (byte) 90, (byte) 90, (byte) 90, (byte) 90,
-                    (byte) 90, (byte) 90, (byte) 90, (byte) 90};
+    public static final List<String> TRANSFORMATION_NAME_OAEP = new ArrayList();
+
 
     public static void main(String[] args) {
 
+        /*TRANSFORMATION_NAME_OAEP.add("RSA/None/OAEPWithSHA1AndMGF1Padding");
+        TRANSFORMATION_NAME_OAEP.add("RSA/ECB/OAEPWithSHA256AndMGF1Padding");
+        TRANSFORMATION_NAME_OAEP.add("RSA/None/OAEPWithSHA256AndMGF1Padding");
+        TRANSFORMATION_NAME_OAEP.add("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
+        TRANSFORMATION_NAME_OAEP.add("RSA/None/OAEPWithSHA-256AndMGF1Padding");
+*/
         Security.addProvider(new LunaProvider());
 
         for (Provider provider : Security.getProviders()) {
@@ -35,7 +42,7 @@ public class SecurityProviderSample {
 
         LunaSlotManager slotManager = LunaSlotManager.getInstance();
         try {
-            slotManager.login("is@b3l20");
+            slotManager.login("assyslunaHA_part2", "Mb7q-X/AK-GLGA-b9sW");
 
             // Generate random data
             byte[] l_rand = new byte[8];
@@ -45,34 +52,83 @@ public class SecurityProviderSample {
             System.out.println("8 bytes random generated: " + javax.xml.bind.DatatypeConverter.printHexBinary(l_rand));
 
             // keystore
-            KeyStore l_ks = KeyStore.getInstance("Luna", "LunaJCAProvider");
-            l_ks.load(null);
+            KeyStore l_ks = KeyStore.getInstance("Luna", "LunaProvider");
+            l_ks.load(null, null);
+            /**Enumeration<String> aliases = l_ks.aliases();
+             while (aliases.hasMoreElements()) {
+             String s =  aliases.nextElement();
+             System.out.println("Existing alias : "+s);
+             java.security.Key l_key = l_ks.getKey(s, "Mb7q-X/AK-GLGA-b9sW".toCharArray());
+             if (l_key != null) {
+             System.out.println("Using key "+s+"=" + l_key.getFormat() + " algo=" + l_key.getAlgorithm() + " : Handle="
+             + Arrays.toString(l_key.getEncoded())+" class :"+l_key.getClass());
+             } else {
+             LunaKey pk = LunaKey.LocateKeyByAlias("aitsmeamenc_pub");
+             if (pk != null) {
+             System.out.println("Using key "+s+"=" + pk.getFormat() + " algo=" + pk.getAlgorithm() + " : Handle="
+             + Arrays.toString(pk.getEncoded())+" class :"+pk.getClass());
+             }
+             }
+             }*/
 
-            if (l_ks.isKeyEntry("MobileKey")) {
-                SecretKey l_key = null;
+            if (l_ks.containsAlias("aitsmeamenc_cer")) {
+                LunaPrivateKeyRsa l_key = null;
                 byte[] l_enc_data;
                 byte[] l_dec_data;
                 String l_data = "12345";
 
-                l_key = (SecretKey) l_ks.getKey("MobileKey", null);
-                System.out.println("Using key MobileKey=" + l_key.getFormat() + " algo=" + l_key.getAlgorithm() + " : Handle="
+                LunaKey pk = LunaKey.LocateKeyByAlias("aitsmeamenc_pub");
+
+                l_key = (LunaPrivateKeyRsa) l_ks.getKey("aitsmeamenc_cer", "Mb7q-X/AK-GLGA-b9sW".toCharArray());
+                System.out.println("Using key aitsmeamenc=" + l_key.getFormat() + " algo=" + l_key.getAlgorithm() + " : Handle="
                         + Arrays.toString(l_key.getEncoded()));
+                
+                     try {
 
-                // Encrypt data using a specific initialization vector
-                IvParameterSpec ivspec = new IvParameterSpec(INITIALIZATION_VECTOR_AES);
+                        String encryptedJWT = "eyJ0eXAiOiJKV1QiLCJraWQiOiJIV1l3eVZ6YzBEWFZ3ZVpYS1NMdG5hTEJRODQ9IiwiY3R5IjoiSldUIiwiZW5jIjoiQTEyOENCQy1IUzI1NiIsImFsZyI6IlJTQS1PQUVQIn0.oZL1TB0gxzuDWDqURG2DqoG0N7pPfQqXw9Jy_Sl3NelmWdFRpSnTp_QV-P5jnaEt7_sUvcj6zeYVpTAP4PG4GZb440JqGSKZDaWn3Ad1aecCIF7mYzGyGWdfbKw2RZ-GqPn94omwCFUEzuNIFSj2ZqBvkPlv31nTlyNXRSZDNS-GYAk1NeyolmylwrCBKaxqIzCkLO2MoYLtnzkWwfgTDrB6HtM7jRVnt7laJbdd77tRfSW_I7oC0RRX4m1lAFobzuBSX0siFQvwb3AGHbifGqB0wX0cdixNoFTekVHhRfXQG-K-TiuJUDxpvs4HBw1QKcq6Q-ylV8Mem0cWFXaBUA.NVj5yQhXcYPKlH8ejILC0w.8Q_LWRxOIzckeeyspL-3GGK5WhhY-XWhXyQu128W8dCgwnsI3-u0gPCaXfuR0NpmwusVMSUs7KfhCtlbbsE-3GjVtw9Jlr2_OovwHpg-2BTp-N8CBhaJi5UXIj-s_lcUxPQB4inVWtvWxjv1Q7D96RuY9vaCWhzSdcgFm7x2KuZdl4ae7W9d0gZDsngPAsGrsmcxZzTslWLrYNJx4D9tnlXzNNysc0XFB-X-7Ww2NSubkgLd9YBCULTXxRjCowBz4P3qu2OOebmb5MFXDADF_ANRWK4jqp2kX236AFhfnrjBd10uKTZPmG4vx10y1BWE9Vo_UyT97uWLxCGMb2o-7VFg5uYQ5ld7tVOnNJeS0sqanJ5iMBn7jb-gghB3uZuHvzofD1GUqr1aTo2I5iJ1HpDGeHNs_VM2nPM0tUERIEVYXwQcwFbnMAqaHaTprS4pMyHz6t2sdNZ0SV1dbNR3qu5jb2_FYWskBWKjOX0Vxkg0TaXr5KZ3MVZIM0NGtU5B200sKrS4TZR8ah6-86emA872RJik-Y8MCYzwIMfucRyZN-klleYD5SSE8Z_tYZ1J54GAYGnJmonMpz0Z_j9J8pxidX9RFLeEfRzKwunGf9AyJkUnhrJge7un7t7hkD8gDheB2aIaD6EZCrhR6R3cs-KRebJX-Z88pI4EFmNrJptyrxW2GQ7FKhe01HEp6EALH9HAMzjh3lxEnkauVHSX1y8Hw5CWonTx7S50sKolllkpOrmcqaAjhWveOZ4-CXWkHkaBT9FkOmFIknYVT7lSvBpsr7DzyU097PW8N8Jf5Hl9xm0XU0kNLV3X6gv6iddCjfEOJ174LQMXhiOdtItqqahyfitx5xXV24P3yhktRxbCry0zUdjBBOQzKq3x8mVs2T8vDxKaoVKxsPNbaEvwp2FrU0IHWYdo4yL_ZgtH5e9DV-sHUDrZBHCsBcbw2uGEGC1SwMXf3BXxe5Z9p2z-RTyv374P2p8GZ_xKTiKWspIq7CSKK_ksqM2rAEaMbltnlgApEXg0GRhnvZIh5AXnwpdy7FovfxHqf6zA9eUgfLM9yjtkrbYfpx82KSTOHhlN12J3CX4WXvnPydg8GvyvkYIJkooxIZNEfSWKUa-d3zG6qMKhlfwnwMNTIwhDoVkovD9O2WAqkrpJj_Y-0lHoGGDp1VH5JKjbc8QBx0xIMKKk5yRXk_IX3pIaJyMg-IfjBwtWK3jJZ1RSHasnG0MHihlro2ap4w_t4kBtJDC7n03uZ0MnbWGhy053L6TydWftY2N-R_QeXil1Tgko9j2Yo-VZ40H0hw2mDcVGTtlAZjuCqJiERueqQDOd5vF6p56t23bLQ0aOGPXFt_FW1dAHrw.wtYbTsFRbx79thQz9vmz6w";
+                        EncryptedJWT ejwt = EncryptedJWT.parse(encryptedJWT);
 
-                Cipher cph = Cipher.getInstance(TRANSFORMATION_NAME_AES);
-                cph.init(Cipher.ENCRYPT_MODE, l_key, ivspec);
-                l_enc_data = cph.doFinal(l_data.getBytes());
+                        // Create a decrypter with the specified private RSA key
+                        RSADecrypter decrypter = new RSADecrypter(l_key);
+                        ejwt.decrypt(decrypter);
 
-                System.out.println("data: " + l_data);
-                System.out.println("Encrypted data: " + javax.xml.bind.DatatypeConverter.printHexBinary(l_enc_data));
+                        System.out.println("decrypted jwt:"+ejwt.getPayload().toString());
+                        SignedJWT sjwt = SignedJWT.parse(ejwt.getPayload().toString());
+                        System.out.println("Claims:"+sjwt.getJWTClaimsSet().toString());
+/**
+                        String initVectVal = "NVj5yQhXcYPKlH8ejILC0w";
 
-                Cipher decrypt = Cipher.getInstance(TRANSFORMATION_NAME_AES);
-                decrypt.init(Cipher.DECRYPT_MODE, l_key, ivspec);
-                l_dec_data = decrypt.doFinal(l_enc_data);
+                        byte[] initializationVector = Base64.getUrlDecoder().decode(initVectVal);;
 
-                System.out.println("Decrypted data: " + new String(l_dec_data));
+                        IvParameterSpec ivParameterSpec = new IvParameterSpec(initializationVector);
+                        Cipher cph = Cipher.getInstance(algo, "LunaProvider");
+                        cph.init(Cipher.ENCRYPT_MODE, pk, oaepParams);
+                        l_enc_data = cph.doFinal(l_data.getBytes());
+
+                        System.out.println("data: " + l_data);
+                        System.out.println("Encrypted data: " + javax.xml.bind.DatatypeConverter.printHexBinary(l_enc_data));
+
+
+
+
+                        String cipheredPart = "8Q_LWRxOIzckeeyspL-3GGK5WhhY-XWhXyQu128W8dCgwnsI3-u0gPCaXfuR0NpmwusVMSUs7KfhCtlbbsE-3GjVtw9Jlr2_OovwHpg-2BTp-N8CBhaJi5UXIj-s_lcUxPQB4inVWtvWxjv1Q7D96RuY9vaCWhzSdcgFm7x2KuZdl4ae7W9d0gZDsngPAsGrsmcxZzTslWLrYNJx4D9tnlXzNNysc0XFB-X-7Ww2NSubkgLd9YBCULTXxRjCowBz4P3qu2OOebmb5MFXDADF_ANRWK4jqp2kX236AFhfnrjBd10uKTZPmG4vx10y1BWE9Vo_UyT97uWLxCGMb2o-7VFg5uYQ5ld7tVOnNJeS0sqanJ5iMBn7jb-gghB3uZuHvzofD1GUqr1aTo2I5iJ1HpDGeHNs_VM2nPM0tUERIEVYXwQcwFbnMAqaHaTprS4pMyHz6t2sdNZ0SV1dbNR3qu5jb2_FYWskBWKjOX0Vxkg0TaXr5KZ3MVZIM0NGtU5B200sKrS4TZR8ah6-86emA872RJik-Y8MCYzwIMfucRyZN-klleYD5SSE8Z_tYZ1J54GAYGnJmonMpz0Z_j9J8pxidX9RFLeEfRzKwunGf9AyJkUnhrJge7un7t7hkD8gDheB2aIaD6EZCrhR6R3cs-KRebJX-Z88pI4EFmNrJptyrxW2GQ7FKhe01HEp6EALH9HAMzjh3lxEnkauVHSX1y8Hw5CWonTx7S50sKolllkpOrmcqaAjhWveOZ4-CXWkHkaBT9FkOmFIknYVT7lSvBpsr7DzyU097PW8N8Jf5Hl9xm0XU0kNLV3X6gv6iddCjfEOJ174LQMXhiOdtItqqahyfitx5xXV24P3yhktRxbCry0zUdjBBOQzKq3x8mVs2T8vDxKaoVKxsPNbaEvwp2FrU0IHWYdo4yL_ZgtH5e9DV-sHUDrZBHCsBcbw2uGEGC1SwMXf3BXxe5Z9p2z-RTyv374P2p8GZ_xKTiKWspIq7CSKK_ksqM2rAEaMbltnlgApEXg0GRhnvZIh5AXnwpdy7FovfxHqf6zA9eUgfLM9yjtkrbYfpx82KSTOHhlN12J3CX4WXvnPydg8GvyvkYIJkooxIZNEfSWKUa-d3zG6qMKhlfwnwMNTIwhDoVkovD9O2WAqkrpJj_Y-0lHoGGDp1VH5JKjbc8QBx0xIMKKk5yRXk_IX3pIaJyMg-IfjBwtWK3jJZ1RSHasnG0MHihlro2ap4w_t4kBtJDC7n03uZ0MnbWGhy053L6TydWftY2N-R_QeXil1Tgko9j2Yo-VZ40H0hw2mDcVGTtlAZjuCqJiERueqQDOd5vF6p56t23bLQ0aOGPXFt_FW1dAHrw";
+                        byte[] encodedbt = Base64.getUrlDecoder().decode(cipheredPart);
+                        System.out.println("Encoded data "+javax.xml.bind.DatatypeConverter.printHexBinary(encodedbt));
+
+                        Cipher decrypt = Cipher.getInstance(algo, "LunaProvider");
+                        decrypt.init(Cipher.DECRYPT_MODE, l_key, oaepParams);
+
+                        l_dec_data = decrypt.doFinal(l_enc_data);
+
+                        System.out.println("Decrypted data: " + new String(l_dec_data));
+
+                        l_dec_data = decrypt.doFinal(encodedbt);
+
+                        System.out.println("Decoded data: " + new String(l_dec_data));
+*/
+                    } catch (Exception t) {
+                        t.printStackTrace();
+                    }
 
             } else {
                 System.out.println("MobileKey not found");
@@ -80,8 +136,6 @@ public class SecurityProviderSample {
 
             slotManager.logout();
         } catch (ProviderException e) {
-            e.printStackTrace();
-        } catch (NoSuchPaddingException e) {
             e.printStackTrace();
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
