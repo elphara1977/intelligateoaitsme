@@ -13,9 +13,8 @@ import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.DefaultJWTSigningAndValidationService;
 
-import java.awt.*;
-import java.awt.datatransfer.StringSelection;
 import java.io.File;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -23,15 +22,68 @@ import java.security.*;
 import java.security.cert.Certificate;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.text.ParseException;
 import java.util.Date;
 import java.util.UUID;
 
 import static java.lang.String.format;
 
-public class VerifyJWT {
+public class SignJWT {
 
     public static final String KEYSTORE_FILE = System.getProperty("user.home") + File.separator
             + "Documents" + File.separator + "IsabelSecurityTestKeystore.jks";
+
+    public static void main0(String[] args) throws ParseException, InvalidKeySpecException, NoSuchAlgorithmException {
+        String s = "{\n" +
+                "  \"keys\": [\n" +
+                "    {\n" +
+                "      \"alg\": \"RSA256\",\n" +
+                "      \"d\": \"GIW2b3-ig8rk-Pm3cD5VqRSxtKBJfNhuBCSNe1N6-_kGrk3M5MWgqEbJCzdoZz8M8fclE8sV11b9_-iQx2iVjaw77gHsGe-IUucSNEeW2VtvbpvgCklw-B3CathBMOuHzqCbafj-J6zJ9uxGUFhgUKkLWZJ1iSuIw7WfKoBx_jU\",\n" +
+                "      \"e\": \"AQAB\",\n" +
+                "      \"n\": \"qYJqXTXsDroPYyQBBmSolK3bJtrSerEm-nrmbSpfn8Rz3y3oXLydvUqj8869PkcEzoJIY5Xf7xDN1Co_qyT9qge-3C6DEwGVHXOwRoXRGQ_h50Vsh60MB5MIuDN188EeZnQ30dtCTBB9KDTSEA2DunplhwLCq4xphnMNUaeHdEk\",\n" +
+                "      \"kty\": \"RSA\",\n" +
+                "      \"kid\": \"rsa1\"\n" +
+                "    }\n" +
+                "  ]\n" +
+                "}";
+
+        s="{\"keys\":[{\"kty\":\"RSA\",\"kid\":\"kz9THWHmGU0yw8wZPzyIv5JV4Zo=\",\"use\":\"sig\",\"alg\":\"RS256\",\"n\":\"xEvGoFEDWCnBr99ZG_LWTElxnu1JNHC1U1-lu9aM6gBZOYeVXFl1Cf-EB9VtXPJYxgR9UPuGe2yWuWPnfi1LxHXsecYSi7oQ2XdjJzueys7mZubiNijAvALPXANoq70Cw-05_pcgvOb5HrxB3Opprz7cON1P_3eAiwi1RLqEdPmNKgfZu841vuv4PHTZONSHqH-nnLRvxVKRlB63OLvrxdmhIMK3b-fJQGr_CT_6827NnVmbe_8KyVhbba-uFRi6jEc8RSZnk5mHpJoiFNeJprgKUyklDGEyTkDqG5d6_uta4UC_WriE085f9e8hRPVGxESa7rBYVeYI4yDaSqAAXQ\",\"e\":\"AQAB\",\"factors\":[]}]}";
+
+        //System.out.println("all keys:"+s);
+
+        JWKSet jwkSet = JWKSet.parse(s);
+        JWKSetKeyStore store = new JWKSetKeyStore(jwkSet);
+
+        JWTSigningAndValidationService signer = new DefaultJWTSigningAndValidationService(store);
+
+
+
+        JWTClaimsSet.Builder claimsSet = new JWTClaimsSet.Builder();
+        claimsSet.issuer("simplewebapp"); // mandatory
+        claimsSet.subject("500012345679"); // mandatory
+        //claimsSet.audience("https://am1.rockkit.org:8443/login/oauth2/realms/root/realms/isabel/access_token"); // mandatory
+        claimsSet.audience("Intellisgn"); // mandatory
+        claimsSet.claim("givenurl", "http://maczr.local.be:8080/jwté");
+        claimsSet.claim("realm", "isabel");
+        claimsSet.claim("test", "test");
+        claimsSet.jwtID(UUID.randomUUID().toString());
+        // TODO: make this configurable
+        Date exp = new Date(System.currentTimeMillis() + (300 * 1000)); // auth good for 60 seconds
+        claimsSet.expirationTime(exp); // mandatory
+        Date now = new Date(System.currentTimeMillis());
+        claimsSet.issueTime(now);
+        claimsSet.notBeforeTime(now);
+
+        JWSAlgorithm alg = JWSAlgorithm.RS256;
+
+        JWSHeader header = new JWSHeader(alg, null, null, null, null, null, null, null, null, null,
+                signer.getDefaultSignerKeyId(),
+                null, null);
+        SignedJWT jwt = new SignedJWT(header, claimsSet.build());
+
+        signer.signJwt(jwt, alg);
+    }
 
     public static void main(String[] args) throws Exception {
 
@@ -55,7 +107,7 @@ public class VerifyJWT {
             JWK jwk = new RSAKey.Builder((RSAPublicKey) publicKey)
                     .privateKey((RSAPrivateKey) key)
                     .keyID(UUID.randomUUID().toString()) // Give the key some ID (optional)
-                    .keyID("jwtsigtest")
+                    .keyID("rsa1")
                     .build();
 
             System.out.println(jwk.toJSONString());
@@ -63,8 +115,8 @@ public class VerifyJWT {
             System.out.println("...generated");
 
             JWTClaimsSet.Builder claimsSet = new JWTClaimsSet.Builder();
-            claimsSet.issuer("JwtTestClient"); // mandatory
-            claimsSet.subject("thisshouldbepkiofzaeher"); // mandatory
+            claimsSet.issuer("simplewebapp"); // mandatory
+            //claimsSet.subject("500012345679"); // mandatory
             claimsSet.audience("Intellisign"); // mandatory
             //claimsSet.claim("givenurl", "http://maczr.local.be:8080/jwté");
             claimsSet.claim("realm", "isabel");
@@ -79,11 +131,15 @@ public class VerifyJWT {
             claimsSet.notBeforeTime(now);
 
             JWSAlgorithm alg = JWSAlgorithm.RS256;
-            JWKSet jwkSet = new JWKSet(jwk);
+            JWKSet jwkSet=new JWKSet(jwk);
 
-            System.out.println(format("JWKS %s", jwkSet.toJSONObject().toJSONString()));
+            System.out.println(format("JWKS %s",jwkSet.toJSONObject().toJSONString()));
 
-            JWKSetKeyStore store = new JWKSetKeyStore(jwkSet);
+            //JWKSetKeyStore store = new JWKSetKeyStore(jwkSet);
+            //JWTSigningAndValidationService signer = new DefaultJWTSigningAndValidationService(store);
+            //JWKSet jwkS = JWKSet.load(new URL("https://am1.rockkit.org:8443/login/oauth2/realms/root/realms/isabel/connect/jwk_uri"));
+            JWKSet jwkS = JWKSet.parse("{\"keys\":[{\"kty\":\"RSA\",\"kid\":\"kz9THWHmGU0yw8wZPzyIv5JV4Zo=\",\"use\":\"sig\",\"alg\":\"RS256\",\"n\":\"xEvGoFEDWCnBr99ZG_LWTElxnu1JNHC1U1-lu9aM6gBZOYeVXFl1Cf-EB9VtXPJYxgR9UPuGe2yWuWPnfi1LxHXsecYSi7oQ2XdjJzueys7mZubiNijAvALPXANoq70Cw-05_pcgvOb5HrxB3Opprz7cON1P_3eAiwi1RLqEdPmNKgfZu841vuv4PHTZONSHqH-nnLRvxVKRlB63OLvrxdmhIMK3b-fJQGr_CT_6827NnVmbe_8KyVhbba-uFRi6jEc8RSZnk5mHpJoiFNeJprgKUyklDGEyTkDqG5d6_uta4UC_WriE085f9e8hRPVGxESa7rBYVeYI4yDaSqAAXQ\",\"e\":\"AQAB\",\"factors\":[]}]}");
+            JWKSetKeyStore store=new JWKSetKeyStore(jwkS);
             JWTSigningAndValidationService signer = new DefaultJWTSigningAndValidationService(store);
 
             JWSHeader header = new JWSHeader(alg, null, null, null, null, null, null, null, null, null,
@@ -91,7 +147,7 @@ public class VerifyJWT {
                     null, null);
 
             SignedJWT jwt = new SignedJWT(header, claimsSet.build());
-            signer.signJwt(jwt, alg);
+            signer.signJwt(jwt);
 
             // Create JWE object with signed JWT as payload
             JWEObject jweObject = new JWEObject(
@@ -125,10 +181,9 @@ public class VerifyJWT {
             ejwt.decrypt(decrypter);
 
             System.out.println("Decrypted: " + ejwt.getPayload());
-            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(ejwt.getPayload().toString()), null);
             SignedJWT signedJwt = SignedJWT.parse(ejwt.getPayload().toString());
-            System.out.println("Signed JWT payload: " + signedJwt.getPayload().toString());
-            System.out.println("Signed JWT claimSet: " + signedJwt.getJWTClaimsSet().toString());
+            System.out.println("Signed JWT payload: "+signedJwt.getPayload().toString());
+            System.out.println("Signed JWT claimSet: "+signedJwt.getJWTClaimsSet().toString());
             System.out.println("Original JWT claimsSet: " + jwt.getJWTClaimsSet().toString());
         }
 
@@ -156,17 +211,6 @@ public class VerifyJWT {
 
     public static String hash(String input) {
         return hash("SHA-1", input);
-    }
-
-    public static void main0(String[] args) throws Exception {
-        SignedJWT jwt = SignedJWT.parse("eyJ0eXAiOiJKV1QiLCJraWQiOiI1RzRuUmczaUpqcUJQcCtYek1MTVl0VUhvQzg9IiwiYWxnIjoiUlMyNTYifQ.eyJhdF9oYXNoIjoic0tMOEg3eUt4OHhpNU9PTXFWNTdvQSIsInN1YiI6InpyYWNoaWQiLCJhdWRpdFRyYWNraW5nSWQiOiJiYTYxZTkxZi1lMTA1LTRhYWEtODE1MC0wNjdmNjA5ZGVlZWYtMzA3NDEiLCJpc3MiOiJodHRwczovL2xvZ2luMi5hY2MuaXNhYmVsLmJlL2xvZ2luL29hdXRoMi9pc2FiZWwiLCJ0b2tlbk5hbWUiOiJpZF90b2tlbiIsIm5vbmNlIjoidGVzdDk4NyIsImF1ZCI6IkJlbGZpdXNCYW5rIiwiY19oYXNoIjoianRWOWZBVHJ2Wl9JQWNObDRlS2VjZyIsImFjciI6IjAiLCJvcmcuZm9yZ2Vyb2NrLm9wZW5pZGNvbm5lY3Qub3BzIjoiYjYwNmRiYzctMWMwMC00MjkxLWJhMGQtNTEyNzM4ZGJjZWE4IiwiYXpwIjoiQmVsZml1c0JhbmsiLCJhdXRoX3RpbWUiOjE1MjI3NTc5ODcsInJlYWxtIjoiL2lzYWJlbCIsImV4cCI6MTUyMjc1ODYwNiwidG9rZW5UeXBlIjoiSldUVG9rZW4iLCJpYXQiOjE1MjI3NTgwMDZ9.Uc5fxYXvj2TgImboio5rMWiE-7T1VxBdzPit-_b6WcWCAQWioFPE3lXRGbVnZNLFeba3A3RS7wnHbQX-vjEdFDrB8xnmHiu5WBdUXWJ02lbnSIOHRw9m1MHEXkB2nTyFObv1a_eHQ4_lJKa-GBJSNJFBBuWINJM_TQeirGume-iXrLsDzgR1kF1i7QOoJM4iHmMvOdJDameVApAwFaWigj29rdAXnU2Wjxx5q0OCrajCtEcOVWoD2I8_3XEkkofH1ocJtQfco_ajmfwU2JMfH4a-RQ1CJht91qOHcPCRksGnY0dj7fcBf_pkqL5JKSqjcos8JZ_ynkA1AUMg-LJfSQ");
-
-        JWKSet jwkSet = JWKSet.parse("{\"keys\":[{\"kty\":\"RSA\",\"kid\":\"5G4nRg3iJjqBPp+XzMLMYtUHoC8=\",\"use\":\"sig\",\"alg\":\"RS256\",\"n\":\"2vAoxy7s-nX-qxMSIUbUyOTKT1Eke-U7nbhZPzFNOPNN3GS6roH09WqigCXcb8QQ3lxYzGmREXeD8kFDtb9FBKd-pcrvBhKd6E5gMdHbdya3dfJRnddQDB-EkrYlZpQQq1Ml0aJ0OYa7Ci_Lr6Hzi70y6wEhB_k0i-mbzVBArPGUZhedrV98r0Loxi3Tzbm9iRYBrKxdHxZB8CukS39MLrji4ZGN40JdIEJ3jSB54lOYTAvZF33nR4J8ZHLVEKI-Y3hylBsP0-8WJ2Qiho-Luh-lEkuHX7J2udOXvAXqT95fi0FqSeqsEMR0MoGXz8_VgPlUdes0Nkxg5mC28nAdfw\",\"e\":\"AQAB\",\"factors\":[]}]}");
-        JWKSetKeyStore store = new JWKSetKeyStore(jwkSet);
-
-        JWTSigningAndValidationService signer = new DefaultJWTSigningAndValidationService(store);
-
-        System.out.println(signer.validateSignature(jwt));
     }
 
 }

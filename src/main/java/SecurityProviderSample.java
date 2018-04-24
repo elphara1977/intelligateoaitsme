@@ -50,7 +50,8 @@ public class SecurityProviderSample {
             EncryptedJWT ejwt = EncryptedJWT.parse(encryptedJWT);
 
             // Create a decrypter with the specified private RSA key
-            RSADecrypter decrypter = new RSADecrypter((PrivateKey) lk.engineGetKey("ditsmeamenc", password.toCharArray()));
+            PrivateKey pkey = (PrivateKey) lk.engineGetKey("ditsmeamenc", password.toCharArray());
+            RSADecrypter decrypter = new RSADecrypter(pkey);
             ejwt.decrypt(decrypter);
 
             System.out.println("decrypted jwt:" + ejwt.getPayload().toString());
@@ -59,6 +60,20 @@ public class SecurityProviderSample {
 
 
             slotManager.logout();
+            slotManager.login(password);
+
+            ejwt = EncryptedJWT.parse(encryptedJWT);
+
+            // Create a decrypter with the specified private RSA key
+            decrypter = new RSADecrypter(pkey);
+            ejwt.decrypt(decrypter);
+
+            System.out.println("decrypted jwt:" + ejwt.getPayload().toString());
+            sjwt = SignedJWT.parse(ejwt.getPayload().toString());
+            System.out.println("Claims:" + sjwt.getJWTClaimsSet().toString());
+
+            slotManager.logout();
+
         } catch (ProviderException e) {
             e.printStackTrace();
         } catch (NoSuchAlgorithmException e) {
