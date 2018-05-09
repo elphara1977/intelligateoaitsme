@@ -134,7 +134,7 @@ public class VerifyJWT {
             System.out.println("Signed JWT claimSet: " + signedJwt.getJWTClaimsSet().toString());
             System.out.println("Original JWT claimsSet: " + jwt.getJWTClaimsSet().toString());
         }
-
+        System.exit(0);
     }
 
     public static String getKid(String keyUse, String alias, PublicKey key) {
