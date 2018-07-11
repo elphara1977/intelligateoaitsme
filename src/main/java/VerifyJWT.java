@@ -8,7 +8,6 @@ import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.apache.commons.codec.binary.Base64;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.DefaultJWTSigningAndValidationService;
@@ -34,9 +33,9 @@ public class VerifyJWT {
     public static final String KEYSTORE_FILE = System.getProperty("user.home") + File.separator
             + "Documents" + File.separator + "IsabelSecurityTestKeystore.jks";
 
-    public static void main(String[] args) throws Exception {
+    public static void main00(String[] args) throws Exception {
 
-        Provider p = new BouncyCastleProvider();
+        Provider p = null;//new BouncyCastleProvider();
         Security.addProvider(p);
 
         System.out.println("generating jwkSet...");
@@ -161,15 +160,15 @@ public class VerifyJWT {
         return hash("SHA-1", input);
     }
 
-    public static void main0(String[] args) throws Exception {
-        SignedJWT jwt = SignedJWT.parse("eyJ0eXAiOiJKV1QiLCJraWQiOiI1RzRuUmczaUpqcUJQcCtYek1MTVl0VUhvQzg9IiwiYWxnIjoiUlMyNTYifQ.eyJhdF9oYXNoIjoic0tMOEg3eUt4OHhpNU9PTXFWNTdvQSIsInN1YiI6InpyYWNoaWQiLCJhdWRpdFRyYWNraW5nSWQiOiJiYTYxZTkxZi1lMTA1LTRhYWEtODE1MC0wNjdmNjA5ZGVlZWYtMzA3NDEiLCJpc3MiOiJodHRwczovL2xvZ2luMi5hY2MuaXNhYmVsLmJlL2xvZ2luL29hdXRoMi9pc2FiZWwiLCJ0b2tlbk5hbWUiOiJpZF90b2tlbiIsIm5vbmNlIjoidGVzdDk4NyIsImF1ZCI6IkJlbGZpdXNCYW5rIiwiY19oYXNoIjoianRWOWZBVHJ2Wl9JQWNObDRlS2VjZyIsImFjciI6IjAiLCJvcmcuZm9yZ2Vyb2NrLm9wZW5pZGNvbm5lY3Qub3BzIjoiYjYwNmRiYzctMWMwMC00MjkxLWJhMGQtNTEyNzM4ZGJjZWE4IiwiYXpwIjoiQmVsZml1c0JhbmsiLCJhdXRoX3RpbWUiOjE1MjI3NTc5ODcsInJlYWxtIjoiL2lzYWJlbCIsImV4cCI6MTUyMjc1ODYwNiwidG9rZW5UeXBlIjoiSldUVG9rZW4iLCJpYXQiOjE1MjI3NTgwMDZ9.Uc5fxYXvj2TgImboio5rMWiE-7T1VxBdzPit-_b6WcWCAQWioFPE3lXRGbVnZNLFeba3A3RS7wnHbQX-vjEdFDrB8xnmHiu5WBdUXWJ02lbnSIOHRw9m1MHEXkB2nTyFObv1a_eHQ4_lJKa-GBJSNJFBBuWINJM_TQeirGume-iXrLsDzgR1kF1i7QOoJM4iHmMvOdJDameVApAwFaWigj29rdAXnU2Wjxx5q0OCrajCtEcOVWoD2I8_3XEkkofH1ocJtQfco_ajmfwU2JMfH4a-RQ1CJht91qOHcPCRksGnY0dj7fcBf_pkqL5JKSqjcos8JZ_ynkA1AUMg-LJfSQ");
+    public static void main(String[] args) throws Exception {
+        SignedJWT jwt = SignedJWT.parse("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjU3MDM4M2M1LWQ5ZDgtNGI0NS05ZmY3LTE3Mjk0YmU0Mjg2YiJ9.eyJyZWFsbSI6IklzYWJlbCIsImlhdCI6MTUzMTEyODkyMywiZXhwIjoxNTMxMTMyNTIzLCJhdWQiOiJJbnRlbGxpc2lnbiIsImlzcyI6ImJlbGZpdXMiLCJzdWIiOiI1MDAyMDM3OTAwMTMxIiwianRpIjoiaHR0cHM6Ly9vcGVuYW1pZzAxLmRjNC5kZXYuaXNhbWdtdC5sb2NhbDo5NDQ0L2Zzcy9zaWduYXR1cmUvYmVsZml1cy8yMzQ2NTY4NDMzMjQwNTYwODY5MyJ9.fxDT8tme3t-kUZcfU-5p7aQrvtknBHrsv7HKu0cCkyi7TuUiJe_UDaagbJ3T2pvwCnKUuFf4uNJJojB_TYDAgbgXmHfces5p1PglMpKr35ML2lLFxkawPox4QwPtQui6vKVjYnfgrmX6rWya65bHdz6uXbgcRntzo-UqKD2u6yo59abvHgTp435PlBWM5CQr89RY5dcZEd8hQYaiW5LffkCTrGvAyM6CsauKWsycP7jHpS_ddckVG_k2MYIBKNTqjr_1PhcjJ8SA7KvOiAI_BV9k-i_Pa_hXLamx4JJU_6H5_Uyng-r8VpGcFepo12O6uxhcjNgHMMuQIqnL3vTCpA");
 //        SignedJWT jwt = SignedJWT.parse("");
 
         //Isabel ACC JWK:
         //JWKSet jwkSet = JWKSet.parse("{\"keys\":[{\"kty\":\"RSA\",\"kid\":\"5G4nRg3iJjqBPp+XzMLMYtUHoC8=\",\"use\":\"sig\",\"alg\":\"RS256\",\"n\":\"2vAoxy7s-nX-qxMSIUbUyOTKT1Eke-U7nbhZPzFNOPNN3GS6roH09WqigCXcb8QQ3lxYzGmREXeD8kFDtb9FBKd-pcrvBhKd6E5gMdHbdya3dfJRnddQDB-EkrYlZpQQq1Ml0aJ0OYa7Ci_Lr6Hzi70y6wEhB_k0i-mbzVBArPGUZhedrV98r0Loxi3Tzbm9iRYBrKxdHxZB8CukS39MLrji4ZGN40JdIEJ3jSB54lOYTAvZF33nR4J8ZHLVEKI-Y3hylBsP0-8WJ2Qiho-Luh-lEkuHX7J2udOXvAXqT95fi0FqSeqsEMR0MoGXz8_VgPlUdes0Nkxg5mC28nAdfw\",\"e\":\"AQAB\",\"factors\":[]}]}");
 
         //Isabel DEV JWK:
-        JWKSet jwkSet = JWKSet.parse("{\"keys\":[{\"kty\":\"RSA\",\"kid\":\"W3wUYlD9P3fsQfqti1KJ6Syk680=\",\"use\":\"sig\",\"alg\":\"RS256\",\"n\":\"mn05ew9io_dbcrL9oJMUhsH65JYivGVzKYeeMDGPt0CcbAoH2QFf54sLy4poHbfdjD1-2Usf8CKIigpacdI9WM16Wo6PGIziwShhctumsYbGQIGTAayN0PEtbXyuWmahdbqfuplooKY5hMEzGyb_hpG2H4tHAHnC5MmapbmLzQ0\",\"e\":\"AQAB\",\"factors\":[]}]}");
+        JWKSet jwkSet = JWKSet.parse("{\"keys\":[{\"kty\":\"RSA\",\"n\":\"wnL1yh91FUKzqLws7TwNcSF6NYEaYz9SWss6RmdpmnwDRAAFSBJ2wmV2_Z48wARjLKCaAipzPraWfcqC9NsJsCah58vX4eL4splG9gc1VCGU-OwEFbLXMqXXdJF0yKatyK60TzZtEpIbPuR6liWuqt07XIvhJVVA4l2n2mW0j6qmV9QKoGcK2M34rUQcu3LpceMH5uFtSW1qaswckrS06tOogjIk5NXNaZ8aprjFhrD6l9Wc1h65dJptpQBo0670k1Mg5PpTr1weQ41GqDQoaOqp43dyN29t9cbYrQ2_HQ3dO9eAgsC5M4SbAESPygkYdvV4H4zh6lItBM-WEGrIHw\",\"e\":\"AQAB\",\"use\":\"sig\",\"alg\":\"RS256\",\"kid\":\"570383c5-d9d8-4b45-9ff7-17294be4286b\"}]}");
         JWKSetKeyStore store = new JWKSetKeyStore(jwkSet);
 
         JWTSigningAndValidationService signer = new DefaultJWTSigningAndValidationService(store);

@@ -35,6 +35,8 @@ public class SecurityProviderSample {
             LunaKeyStore lk = new LunaKeyStore();
             lk.engineLoad(null, null);
 
+
+
             String alias;
             Enumeration<String> aliases = lk.engineAliases();
             while (aliases.hasMoreElements()) {
